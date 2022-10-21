@@ -2,6 +2,8 @@
 
 All functionality is contained in a single HTML file.
 
+Try `print-calendar` [online](https://deverac.github.io/print-calendar/).
+
 Other calendar generators, which may be useful:
 
 * [simple-printable-calendar](https://github.com/vladvelici/simple-printable-calendar) Print a month at a time. 
