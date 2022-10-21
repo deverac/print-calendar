@@ -1,0 +1,987 @@
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <script type="text/javascript">
+    var calendar;
+    var controls;
+
+    class Css {
+
+      static boldOff(e) {
+        e.style.fontWeight = 'normal';
+      }
+
+      static boldOn(e) {
+        e.style.fontWeight = 'bold';
+      }
+
+      static displayOff(e) {
+        e.style.display = 'none';
+      }
+
+      static displayOn(e, val) {
+        e.style.display = val || '';
+      }
+
+      static fontSize(e, val) {
+        e.style.fontSize = val;
+      }
+
+      static innertext(e, val) {
+        e.innerText = val;
+      }
+
+      static position(e, t, r, b, l) {
+        e.style.top = t;
+        e.style.right = r;
+        e.style.bottom = b;
+        e.style.left = l;
+      }
+
+      static positionLL(e) {
+        Css.position(e, 'auto', 'auto', 0, 0);
+      }
+
+      static positionLR(e) {
+        Css.position(e, 'auto', 0, 0, 'auto');
+      }
+
+      static positionUL(e) {
+        Css.position(e, 0, 'auto', 'auto', 0);
+      }
+
+      static positionUR(e) {
+        Css.position(e, 0, 0, 'auto', 'auto');
+      }
+
+      static visibilityOff(e) {
+        e.style.visibility = 'hidden';
+      }
+
+      static visibilityOn(e) {
+        e.style.visibility = 'visible';
+      }
+
+    }
+
+    class MonthName {
+
+      constructor() {
+        this.tr = document.querySelector("#month");
+        this.td = document.querySelector("#monthName");
+        this.monthNum = 0;
+      }
+
+      fontsize(str) {
+        Css.fontSize(this.td, str);
+      }
+
+      fontweight(str) {
+        if (str == 'bold') {
+          Css.boldOn(this.td);
+        } else if (str == 'normal') {
+          Css.boldOff(this.td);
+        }
+      }
+
+      name(str) {
+        this.monthNum = parseInt(str);
+        const monthNames = [
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December'
+        ];
+        Css.innertext(this.td, monthNames[this.monthNum % 12]);
+      }
+
+      visible(str) {
+        if (str == 'show') {
+          Css.displayOn(this.tr);
+          Css.visibilityOn(this.td);
+          Css.displayOn(this.td);
+        } else if (str == 'hide') {
+          Css.displayOff(this.tr);
+        } else if (str == 'blank') {
+          Css.displayOn(this.tr);
+          Css.visibilityOff(this.td);
+          Css.displayOn(this.td);
+        }
+      }
+
+    };
+
+    class WeekdayNames {
+
+      constructor() {
+        this.tr = document.querySelector("#weekdays");
+        this.tds = [...document.querySelectorAll("#weekdays td span")];
+      }
+
+      fontsize(str) {
+        this.tds.forEach(e => Css.fontSize(e, str));
+      }
+
+      fontweight(str) {
+        this.tds.forEach(e => {
+          if (str == 'bold') {
+            Css.boldOn(e);
+          } else if (str == 'normal') {
+            Css.boldOff(e);
+          }
+        });
+      }
+
+      startday(intval) {
+        const dayNames = [
+          'Sunday',
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday'
+        ];
+        for (var i = 0; i < this.tds.length; i++) {
+          Css.innertext(this.tds[i], dayNames[(intval + i) % 7]);
+        }
+      }
+
+      visible(str) {
+        if (str == 'show') {
+          Css.displayOn(this.tr);
+          this.tds.forEach(e => { Css.visibilityOn(e); Css.displayOn(e); });
+        } else if (str == 'hide') {
+          Css.displayOff(this.tr);
+        } else if (str == 'blank') {
+          Css.displayOn(this.tr);
+          this.tds.forEach(e => { Css.visibilityOff(e); Css.displayOn(e); });
+        }
+      }
+
+    };
+
+    class DayNumbers {
+
+      constructor() {
+        this.elems = [...document.querySelectorAll('.n')];
+      }
+
+      fontsize(str) {
+        this.elems.forEach(e => Css.fontSize(e, str));
+      }
+
+      fontweight(str) {
+        this.elems.forEach(e => {
+          if (str == 'bold') {
+            Css.boldOn(e);
+          } else if (str == 'normal') {
+            Css.boldOff(e);
+          }
+        });
+      }
+
+      position(str) {
+        if (str == 'LR') {
+          this.elems.forEach(e => Css.positionLR(e));
+        } else if (str == 'LL') {
+          this.elems.forEach(e => Css.positionLL(e));
+        } else if (str == 'UL') {
+          this.elems.forEach(e => Css.positionUL(e));
+        } else if (str == 'UR') {
+          this.elems.forEach(e => Css.positionUR(e));
+        }
+      }
+
+      setnums(ary) {
+        for (var i = 0; i < this.elems.length; i++) {
+          Css.innertext(this.elems[i], ary[i % ary.length]);
+        }
+      }
+
+      visible(str) {
+        if (str == 'show') {
+          this.elems.forEach(e => Css.displayOn(e));
+        } else if (str == 'hide') {
+          this.elems.forEach(e => Css.displayOff(e));
+        }
+      }
+
+    };
+
+    class Calendar {
+
+      constructor(mon, yr) {
+        this.monthname = new MonthName();
+        this.weekdays = new WeekdayNames();
+        this.daynums = new DayNumbers();
+        this.helpPage = document.getElementById('help');
+        this.table = document.getElementById('tbl');
+        this.config = {
+          year: yr,
+          month: mon,
+          fixed: 0,
+          paper: 'Letter',
+          startDay: 0,
+          custom: {
+            weekCount: 0,
+            offset: 0,
+            start: 1,
+            length: 6 * 7,
+          },
+        };
+        this.monthname.name(this.config.month)
+        this.weekdays.startday(this.config.startDay);
+        this.updateCal();
+      }
+
+      computeWeekCount(mon, yr, strt) {
+        var startDay = Calendar.getDayForMonth(mon, yr);
+        var offset = ((startDay - strt) + 7) % 7;
+        var dim = Calendar.getDaysInMonth(mon, yr);
+        return Math.ceil((offset + dim) / 7);
+      }
+
+      hideHelp() {
+        Css.displayOff(this.helpPage);
+      }
+
+      setCellSize(str) {
+        this.config.fixed = parseInt(str);
+        if (!this.config.custom.weekCount) {
+          this.updateCal();
+        }
+      }
+
+      setCustomLength(str) {
+        this.config.custom.length = parseInt(str);
+        this.updateCal();
+      }
+
+      setCustomOffset(str) {
+        this.config.custom.offset = parseInt(str);
+        this.updateCal();
+      }
+
+      setCustomStartNumber(str) {
+        this.config.custom.start = parseInt(str);
+        this.updateCal();
+      }
+
+      setCustomWeekCount(str) {
+        this.config.custom.weekCount = parseInt(str);
+        this.updateCal();
+      }
+
+      setMonth(str) {
+        this.config.month = parseInt(str);
+        this.monthname.name(this.config.month)
+        this.updateCal();
+      }
+
+      setPaperSize(str) {
+        this.config.paper = str;
+        if (str == 'Letter') {
+            this.table.style.aspectRatio = 11/8.5; // inches
+        } else if (str == 'A4') {
+            this.table.style.aspectRatio = 297/210; // mm
+        }
+        this.updateCal();
+      }
+
+      setStartDay(str) {
+        this.config.startDay = parseInt(str);
+        this.weekdays.startday(this.config.startDay);
+        this.updateCal();
+      }
+
+      setYear(str) {
+        this.config.year = parseInt(str);
+        if (!this.config.custom.weekCount) {
+          this.updateCal();
+        }
+      }
+
+      showHelp() {
+        Css.displayOn(this.helpPage, 'block');
+      }
+
+      updateCal() {
+        var ary = [];
+        const offset = (this.config.custom.weekCount ?
+          this.config.custom.offset :
+          ((Calendar.getDayForMonth(this.config.month, this.config.year) - this.config.startDay) + 7) % 7);
+        for (var i = 0; i < offset; i++) {
+          ary.push('');
+        }
+
+        const beg = (this.config.custom.weekCount ?
+          this.config.custom.start :
+          1);
+        const end = (this.config.custom.weekCount ?
+          beg + this.config.custom.length - 1 :
+          Calendar.getDaysInMonth(this.config.month, this.config.year));
+        for (var i = beg; i <= end; i++) {
+          ary.push(i);
+        }
+
+        for (var i = (offset + (end - beg + 1)); i < 7 * 6; i++) {
+          ary.push('');
+        }
+        this.daynums.setnums(ary);
+
+        var rows = [...document.querySelectorAll('#tbl .r')];
+        rows.forEach(e => Css.displayOn(e));
+        if (!this.config.fixed) {
+          var wks = this.computeWeekCount(this.config.month, this.config.year, this.config.startDay);
+          if (this.config.custom.weekCount) {
+            wks = this.config.custom.weekCount;
+          }
+          for (var i = wks; i < rows.length; i++) {
+            Css.displayOff(rows[i]);
+          }
+        }
+
+      }
+
+      static getDayForMonth(mon, yr) {
+        // Zeller's Rule Formula
+        var k = 1; // Date
+        var m = (mon + 11); // 1=Mar, 11=Jan, 12=Feb
+        if (m > 12) {
+          m -= 12;
+        }
+        var d = yr - 2000; // Last two digits of year
+        if (mon == 0 || mon == 1) {
+          d--;
+        }
+        var c = Math.floor(yr / 100); // First two digits of year
+        var f = k + Math.floor((13 * m - 1) / 5) + d + Math.floor(d / 4) + Math.floor(c / 4) - 2 * c;
+        while (f < 0) {
+          f += 7;
+        }
+        return f % 7;
+      }
+
+      static getDaysInMonth(mon, yr) {
+        var dim = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mon];
+        if (Calendar.isFeb(mon) && Calendar.isLeapYear(yr)) {
+          dim++;
+        }
+        return dim;
+      }
+
+      static isFeb(mon) {
+        return mon == 1;
+      }
+
+      static isLeapYear(yr) {
+        if (yr % 4) {
+          return 0;
+        }
+        if (yr % 100) {
+          return 1;
+        }
+        if (yr % 400) {
+          return 1;
+        }
+        return 0;
+      }
+
+    }
+
+    class Controls {
+
+      constructor(mon, yr) {
+        this.setYear(yr);
+        this.setMonth(mon);
+      }
+
+      setMonth(val) {
+        document.getElementById('selectMonth').value = val;
+      }
+
+      setYear(val) {
+        document.getElementById('selectYear').value = val;
+      }
+
+    }
+
+    function initPage() {
+      var dateObj = new Date();
+
+      document.forms['ctrls'].reset();
+      const curYear = dateObj.getUTCFullYear();
+      const curMonth = dateObj.getMonth();
+
+      controls = new Controls(curMonth, curYear);
+
+      calendar = new Calendar(curMonth, curYear);
+    }
+  </script>
+
+  <style tpe="text/css">
+    @media print {
+      #ctrls {
+        display: none;
+      }
+    }
+
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    table {
+      aspect-ratio: 11 / 8.5;
+      border: solid 1px black;
+      border-spacing: 0;
+      margin: auto auto;
+      table-layout: fixed;
+      width: 90%;
+    }
+
+    td {
+      border: solid 1px black;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .help {
+      background-color: lightgray;
+      border: 4px solid black;
+      display: none;
+      left: 10%;
+      padding: 20px;
+      position: absolute;
+      bottom: 0;
+      width: 80%;
+      z-index: 100;
+    }
+
+    .lbl {
+      display: inline-block;
+      text-align: right;
+      width: 20%;
+    }
+
+    .n {
+      background-color: white;
+      bottom: 0;
+      left: 'auto';
+      position: absolute;
+      right: 0;
+      top: 'auto';
+    }
+
+    .t {
+      font-size: 12px;
+      left: 0;
+      padding: 2px;
+      position: absolute;
+      top: 0;
+    }
+
+    #ctrls {
+      margin: 20px;
+    }
+
+    #month {
+      height: 10px;
+      font-size: 12pt;
+      font-weight: bold;
+    }
+
+    #month td {
+      text-align: center;
+    }
+
+    #weekdays td {
+      height: 10px;
+      font-size: 12pt;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body onload='initPage()'>
+
+  <form id='ctrls' name='ctrls'>
+
+    <div>
+      <div class='lbl'>Calendar:</div>
+
+      <select onchange='calendar.setYear(this.value)' id='selectYear'>
+        <option value='2020'>2020</option>
+        <option value='2021'>2021</option>
+        <option value='2022'>2022</option>
+        <option value='2023'>2023</option>
+        <option value='2024'>2024</option>
+        <option value='2025'>2025</option>
+        <option value='2026'>2026</option>
+        <option value='2027'>2027</option>
+        <option value='2028'>2028</option>
+        <option value='2029'>2029</option>
+        <option value='2030'>2030</option>
+        <option value='2031'>2031</option>
+        <option value='2032'>2032</option>
+        <option value='2033'>2033</option>
+        <option value='2034'>2034</option>
+        <option value='2035'>2035</option>
+        <option value='2036'>2036</option>
+        <option value='2037'>2037</option>
+        <option value='2038'>2038</option>
+        <option value='2039'>2039</option>
+        <option value='2040'>2040</option>
+        <option value='2041'>2041</option>
+        <option value='2042'>2042</option>
+        <option value='2043'>2043</option>
+        <option value='2044'>2044</option>
+        <option value='2045'>2045</option>
+        <option value='2046'>2046</option>
+        <option value='2047'>2047</option>
+        <option value='2048'>2048</option>
+        <option value='2049'>2049</option>
+      </select>
+
+      <select onchange='calendar.setMonth(this.value)' id='selectMonth'>
+        <option value='0'>Jan</option>
+        <option value='1'>Feb</option>
+        <option value='2'>Mar</option>
+        <option value='3'>Apr</option>
+        <option value='4'>May</option>
+        <option value='5'>Jun</option>
+        <option value='6'>Jul</option>
+        <option value='7'>Aug</option>
+        <option value='8'>Sep</option>
+        <option value='9'>Oct</option>
+        <option value='10'>Nov</option>
+        <option value='11'>Dec</option>
+      </select>
+
+      <select onchange='calendar.setCellSize(this.value)'>
+        <option value='0'>Expand Cells</option>
+        <option value='1'>Fixed Cells</option>
+      </select>
+
+      <select onchange='calendar.setPaperSize(this.value)'>
+        <option value='Letter'>8.5&quot;x11&quot;</option>
+        <option value='A4'>A4</option>
+      </select>
+    </div>
+
+
+    <div>
+      <div class='lbl'>Start On:</div>
+
+      <select onchange='calendar.setStartDay(this.value)'>
+        <option value='0'>Sun</option>
+        <option value='1'>Mon</option>
+        <option value='2'>Tue</option>
+        <option value='3'>Wed</option>
+        <option value='4'>Thu</option>
+        <option value='5'>Fri</option>
+        <option value='6'>Sat</option>
+      </select>
+    </div>
+
+    <div>
+      <span class='lbl'>Month Name:</span>
+
+      <select onchange='calendar.monthname.visible(this.value)'>
+        <option value='show'>Show</option>
+        <option value='hide'>Hide</option>
+        <option value='blank'>Blank</option>
+      </select>
+
+      <select onchange='calendar.monthname.fontweight(this.value)'>
+        <option value='bold'>Bold</option>
+        <option value='normal'>Normal</option>
+      </select>
+
+      <select onchange='calendar.monthname.fontsize(this.value)'>
+        <option value='10pt'>10pt</option>
+        <option value='12pt' selected>12pt</option>
+        <option value='20pt'>20pt</option>
+        <option value='30pt'>30pt</option>
+        <option value='40pt'>40pt</option>
+        <option value='50pt'>50pt</option>
+        <option value='60pt'>60pt</option>
+      </select>
+    </div>
+
+    <div>
+      <span class='lbl'>Day Names:</span>
+
+      <select onchange='calendar.weekdays.visible(this.value)'>
+        <option value='show'>Show</option>
+        <option value='hide'>Hide</option>
+        <option value='blank'>Blank</option>
+      </select>
+
+      <select onchange='calendar.weekdays.fontweight(this.value)'>
+        <option value='bold'>Bold</option>
+        <option value='normal'>Normal</option>
+      </select>
+
+      <select onchange='calendar.weekdays.fontsize(this.value)'>
+        <option value='10pt'>10pt</option>
+        <option value='12pt' selected>12pt</option>
+        <option value='15pt'>15pt</option>
+        <option value='20pt'>20pt</option>
+      </select>
+    </div>
+
+    <div>
+      <span class='lbl'>Numbers:</span>
+
+      <select onchange='calendar.daynums.visible(this.value)'>
+        <option value='show'>Show</option>
+        <option value='hide'>Hide</option>
+      </select>
+
+      <select onchange='calendar.daynums.fontweight(this.value)'>
+        <option value='normal'>Normal</option>
+        <option value='bold'>Bold</option>
+      </select>
+
+      <select onchange='calendar.daynums.fontsize(this.value)'>
+        <option value='10pt'>10pt</option>
+        <option value='11pt'>11pt</option>
+        <option value='12pt' selected>12pt</option>
+        <option value='14pt'>14pt</option>
+        <option value='18pt'>18pt</option>
+        <option value='22pt'>22pt</option>
+      </select>
+
+      <select onchange='calendar.daynums.position(this.value)'>
+        <option value='LR'>Lower Right</option>
+        <option value='LL'>Lower Left</option>
+        <option value='UL'>Upper Left</option>
+        <option value='UR'>Upper Right</option>
+      </select>
+    </div>
+
+    <div>
+      <span class='lbl'>Custom:</span>
+
+      <select onchange='calendar.setCustomWeekCount(this.value)'>
+        <option value='0'>Auto</option>
+        <option value='1'>1 week</option>
+        <option value='2'>2 weeks</option>
+        <option value='3'>3 weeks</option>
+        <option value='4'>4 weeks</option>
+        <option value='5'>5 weeks</option>
+        <option value='6'>6 weeks</option>
+      </select>
+
+      <select onchange='calendar.setCustomOffset(this.value)'>
+        <option value='0'>Offset 0 days</option>
+        <option value='1'>Offset 1 day</option>
+        <option value='2'>Offset 2 days</option>
+        <option value='3'>Offset 3 days</option>
+        <option value='4'>Offset 4 days</option>
+        <option value='5'>Offset 5 days</option>
+        <option value='6'>Offset 6 days</option>
+        <option value='7'>Offset 7 days</option>
+        <option value='8'>Offset 8 days</option>
+        <option value='9'>Offset 9 days</option>
+        <option value='10'>Offset 10 days</option>
+        <option value='11'>Offset 11 days</option>
+        <option value='12'>Offset 12 days</option>
+        <option value='13'>Offset 13 days</option>
+        <option value='14'>Offset 14 days</option>
+        <option value='15'>Offset 15 days</option>
+        <option value='16'>Offset 16 days</option>
+        <option value='17'>Offset 17 days</option>
+        <option value='18'>Offset 18 days</option>
+        <option value='19'>Offset 19 days</option>
+        <option value='20'>Offset 20 days</option>
+        <option value='21'>Offset 21 days</option>
+        <option value='22'>Offset 22 days</option>
+        <option value='23'>Offset 23 days</option>
+        <option value='24'>Offset 24 days</option>
+        <option value='25'>Offset 25 days</option>
+        <option value='26'>Offset 26 days</option>
+        <option value='27'>Offset 27 days</option>
+        <option value='28'>Offset 28 days</option>
+        <option value='29'>Offset 29 days</option>
+        <option value='30'>Offset 30 days</option>
+        <option value='31'>Offset 31 days</option>
+        <option value='32'>Offset 32 days</option>
+        <option value='33'>Offset 33 days</option>
+        <option value='34'>Offset 34 days</option>
+        <option value='35'>Offset 35 days</option>
+        <option value='36'>Offset 36 days</option>
+        <option value='37'>Offset 37 days</option>
+        <option value='38'>Offset 38 days</option>
+        <option value='39'>Offset 39 days</option>
+        <option value='40'>Offset 40 days</option>
+        <option value='41'>Offset 41 days</option>
+        <option value='42'>Offset 42 days</option>
+        <option value='43'>Offset 43 days</option>
+        <option value='44'>Offset 44 days</option>
+        <option value='45'>Offset 45 days</option>
+        <option value='46'>Offset 46 days</option>
+      </select>
+
+      <select onchange='calendar.setCustomStartNumber(this.value)'>
+        <option value='1'>1</option>
+        <option value='2'>2</option>
+        <option value='3'>3</option>
+        <option value='4'>4</option>
+        <option value='5'>5</option>
+        <option value='6'>6</option>
+        <option value='7'>7</option>
+        <option value='8'>8</option>
+        <option value='9'>9</option>
+        <option value='10'>10</option>
+        <option value='11'>11</option>
+        <option value='12'>12</option>
+        <option value='13'>13</option>
+        <option value='14'>14</option>
+        <option value='15'>15</option>
+        <option value='16'>16</option>
+        <option value='17'>17</option>
+        <option value='18'>18</option>
+        <option value='19'>19</option>
+        <option value='20'>20</option>
+        <option value='21'>21</option>
+        <option value='22'>22</option>
+        <option value='23'>23</option>
+        <option value='24'>24</option>
+        <option value='25'>25</option>
+        <option value='26'>26</option>
+        <option value='27'>27</option>
+        <option value='28'>28</option>
+        <option value='29'>29</option>
+        <option value='30'>30</option>
+        <option value='31'>31</option>
+        <option value='32'>32</option>
+        <option value='33'>33</option>
+        <option value='34'>34</option>
+        <option value='35'>35</option>
+        <option value='36'>36</option>
+        <option value='37'>37</option>
+        <option value='38'>38</option>
+        <option value='39'>39</option>
+        <option value='40'>40</option>
+        <option value='41'>41</option>
+        <option value='42'>42</option>
+        <option value='43'>43</option>
+      </select>
+
+      <select onchange='calendar.setCustomLength(this.value)'>
+        <option value='0'>0 days</option>
+        <option value='1'>1 day</option>
+        <option value='2'>2 days</option>
+        <option value='3'>3 days</option>
+        <option value='4'>4 days</option>
+        <option value='5'>5 days</option>
+        <option value='6'>6 days</option>
+        <option value='7'>7 days</option>
+        <option value='8'>8 days</option>
+        <option value='9'>9 days</option>
+        <option value='10'>10 days</option>
+        <option value='11'>11 days</option>
+        <option value='12'>12 days</option>
+        <option value='13'>13 days</option>
+        <option value='14'>14 days</option>
+        <option value='15'>15 days</option>
+        <option value='16'>16 days</option>
+        <option value='17'>17 days</option>
+        <option value='18'>18 days</option>
+        <option value='19'>19 days</option>
+        <option value='20'>20 days</option>
+        <option value='21'>21 days</option>
+        <option value='22'>22 days</option>
+        <option value='23'>23 days</option>
+        <option value='24'>24 days</option>
+        <option value='25'>25 days</option>
+        <option value='26'>26 days</option>
+        <option value='27'>27 days</option>
+        <option value='28'>28 days</option>
+        <option value='29'>29 days</option>
+        <option value='30'>30 days</option>
+        <option value='31'>31 days</option>
+        <option value='32'>32 days</option>
+        <option value='33'>33 days</option>
+        <option value='34'>34 days</option>
+        <option value='35'>35 days</option>
+        <option value='36'>36 days</option>
+        <option value='37'>37 days</option>
+        <option value='38'>38 days</option>
+        <option value='39'>39 days</option>
+        <option value='40'>40 days</option>
+        <option value='41'>41 days</option>
+        <option value='42' selected>42 days</option>
+      </select>
+    </div>
+
+    <div>
+      <span class='lbl'>&nbsp;</span>
+      <button onclick='print(); return false;'>Print</button>
+      <button onclick='calendar.showHelp(); return false;'>Help</button>
+      <button onclick='initPage(); return false;'>Reset</button>
+    </div>
+
+  </form>
+
+  <div class='help' id='help' onclick='calendar.hideHelp()'>
+    <h2>Help</h2>
+
+    <p>
+      Generate a blank, monthly calendar. On startup, the displayed calendar
+      will be for the current month and year. Basic modifications, such as
+      enlarging the month name, can be made. The calendar can then be printed.
+      Printing an entire year requires printing one month at a time.
+    </p>
+
+    <p>
+      <b>Calendar:</b> Select the year. Select the month. Select cell behavior.
+      Select the paper size. Displaying a month will require between four and
+      six rows, depending on the month and the current settings. 'Expand Cells'
+      will hide rows that have no dates. 'Fixed Cells' will always display six
+      rows.
+    </p>
+
+    <p>
+      <b>Start On:</b> Specify the starting day of the week.
+    </p>
+
+    <p>
+      <b>Month Name:</b> Show, hide, or clear the Month Name. Make the Month
+      Name bold or normal. Set the font size of the Month Name.
+    </p>
+
+    <p>
+      <b>Day Names:</b> Show, hide, or clear the Day Names. Make the Day Names
+      bold or normal. Set the font size of the Day Names.
+    </p>
+
+    <p>
+      <b>Numbers:</b> Show or hide, the Numbers. Make the Numbers bold or
+      normal. Set the font size of the Numbers. Select the position of the Numbers.
+    </p>
+
+    <p>
+      <b>Custom:</b> Allows manual control of the calendar. Select how many
+      weeks to display. Select the number of days to skip before printing the
+      first Number. Select what the first Number should be. Select how many days
+      should be numbered. When the first option is 'Auto', customization is
+      disabled and all other Custom settings are ignored. When the first option
+      is not 'Auto', only the Year and Expanded/Fixed Cells settings are ignored.
+    </p>
+
+    <p>
+      The <b>Print</b> button shows a print dialog. Only the calendar will be
+      printed; none of the controls will be printed. The <b>Help</b> button
+      shows this help. Click anywhere on the help panel to close it. The
+      <b>Reset</b> button resets all calendar values. Reloading the page will
+      accomplish the same thing.
+    </p>
+
+    <p>
+      The Gregorian calendar repeats itself every 28 years. Most months repeat
+      more frequently. To generate a calendar for a year that is not in the list
+      of years, find an equivalent year and use that. For example, the year 2076
+      uses exactly the same calendar as the year 2020. Alternately use the
+      'Custom' settings to generate a calendar.
+    </p>
+
+  </div>
+
+  <table id='tbl'>
+    <tr id='month'>
+      <td colspan=7><span id='monthName'>January</span></td>
+    </tr>
+
+    <tr id='weekdays' name='weekdays'>
+      <td><span>Sunday</span></td>
+      <td><span>Monday</span></td>
+      <td><span>Tuesday</span></td>
+      <td><span>Wednesday</span></td>
+      <td><span>Thursday</span></td>
+      <td><span>Friday</span></td>
+      <td><span>Saturday</span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+  </table>
+
+</body>
+<html>
