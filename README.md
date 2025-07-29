@@ -4,6 +4,8 @@ All functionality is contained in a single HTML file.
 
 Try `print-calendar` [online](https://deverac.github.io/print-calendar/).
 
+A [simpler version](https://deverac.github.io/print-calendar/cal.html) allows no customization other than selecting the month and year. Clicking on `Today:` will return the calendar to the current month.
+
 Other calendar generators, which may be useful:
 
 * [simple-printable-calendar](https://github.com/vladvelici/simple-printable-calendar) Print a month at a time. 

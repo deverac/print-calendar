@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name='HandheldFriendly' content='true' />
+  <meta name='viewport' content='width=device-width,height=device-height,user-scalable=no' />
+
+  <style tpe="text/css">
+    @media print {
+      #ctrls {
+        display: none;
+      }
+    }
+
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      xxpadding: 0;
+      padding-top: 20px;
+      background-color: lightblue;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    table {
+      xxaspect-ratio: 11 / 8.5;
+      border: solid 1px black;
+      border-spacing: 0;
+      margin: auto auto;
+      table-layout: fixed;
+      width: 90%;
+      height: calc(100vw * (8.5/11))
+    }
+
+    td {
+      border: solid 1px black;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .help {
+      background-color: lightgray;
+      border: 4px solid black;
+      display: none;
+      left: 10%;
+      padding: 20px;
+      position: absolute;
+      bottom: 0;
+      width: 80%;
+      z-index: 100;
+    }
+
+    .lbl {
+      display: inline-block;
+      text-align: right;
+      width: 20%;
+    }
+
+    .n {
+      xxbackground-color: white;
+      background-color: lightblue;
+      bottom: 0;
+      left: 'auto';
+      position: absolute;
+      right: 0;
+      top: 'auto';
+    }
+
+    .t {
+      font-size: 12px;
+      left: 0;
+      padding: 2px;
+      position: absolute;
+      top: 0;
+    }
+
+    #ctrls {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      xxmargin: auto auto;
+    }
+
+    #ctrls button {
+      font-size: 20pt;
+    }
+
+    #ctrls select {
+      font-size: 20pt;
+    }
+
+    #month {
+      height: 10px;
+      font-size: 12pt;
+      font-weight: bold;
+    }
+
+    #month td {
+      text-align: center;
+    }
+
+    #weekdays td {
+      height: 10px;
+      font-size: 12pt;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    #today {
+        text-align: center;
+    }
+  </style>
+
+  <script type="text/javascript">
+    // This code was copied from another project and modified, so may contain
+    // a bunch of unused code.
+
+    var calendar;
+    var controls;
+
+    class Css {
+
+      static boldOff(e) {
+        e.style.fontWeight = 'normal';
+      }
+
+      static boldOn(e) {
+        e.style.fontWeight = 'bold';
+      }
+
+      static displayOff(e) {
+        e.style.display = 'none';
+      }
+
+      static displayOn(e, val) {
+        e.style.display = val || '';
+      }
+
+      static fontSize(e, val) {
+        e.style.fontSize = val;
+      }
+
+      static innertext(e, val) {
+        e.innerText = val;
+      }
+
+      static position(e, t, r, b, l) {
+        e.style.top = t;
+        e.style.right = r;
+        e.style.bottom = b;
+        e.style.left = l;
+      }
+
+      static positionLL(e) {
+        Css.position(e, 'auto', 'auto', 0, 0);
+      }
+
+      static positionLR(e) {
+        Css.position(e, 'auto', 0, 0, 'auto');
+      }
+
+      static positionUL(e) {
+        Css.position(e, 0, 'auto', 'auto', 0);
+      }
+
+      static positionUR(e) {
+        Css.position(e, 0, 0, 'auto', 'auto');
+      }
+
+      static visibilityOff(e) {
+        e.style.visibility = 'hidden';
+      }
+
+      static visibilityOn(e) {
+        e.style.visibility = 'visible';
+      }
+
+    }
+
+    class MonthName {
+
+      constructor() {
+        this.tr = document.querySelector("#month");
+        this.td = document.querySelector("#monthName");
+        this.monthNum = 0;
+      }
+
+      fontsize(str) {
+        Css.fontSize(this.td, str);
+      }
+
+      fontweight(str) {
+        if (str == 'bold') {
+          Css.boldOn(this.td);
+        } else if (str == 'normal') {
+          Css.boldOff(this.td);
+        }
+      }
+
+      name(str, year) {
+        this.monthNum = parseInt(str);
+        const monthNames = [
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December'
+        ];
+        Css.innertext(this.td, monthNames[this.monthNum % 12] + ' '+ year);
+      }
+
+      visible(str) {
+        if (str == 'show') {
+          Css.displayOn(this.tr);
+          Css.visibilityOn(this.td);
+          Css.displayOn(this.td);
+        } else if (str == 'hide') {
+          Css.displayOff(this.tr);
+        } else if (str == 'blank') {
+          Css.displayOn(this.tr);
+          Css.visibilityOff(this.td);
+          Css.displayOn(this.td);
+        }
+      }
+
+    };
+
+    class WeekdayNames {
+
+      constructor() {
+        this.tr = document.querySelector("#weekdays");
+        this.tds = [...document.querySelectorAll("#weekdays td span")];
+      }
+
+      fontsize(str) {
+        this.tds.forEach(e => Css.fontSize(e, str));
+      }
+
+      fontweight(str) {
+        this.tds.forEach(e => {
+          if (str == 'bold') {
+            Css.boldOn(e);
+          } else if (str == 'normal') {
+            Css.boldOff(e);
+          }
+        });
+      }
+
+      startday(intval) {
+        const dayNames = [
+          'Sun',
+          'Mon',
+          'Tue',
+          'Wed',
+          'Thu',
+          'Fri',
+          'Sat'
+        ];
+        for (var i = 0; i < this.tds.length; i++) {
+          Css.innertext(this.tds[i], dayNames[(intval + i) % 7]);
+        }
+      }
+
+      visible(str) {
+        if (str == 'show') {
+          Css.displayOn(this.tr);
+          this.tds.forEach(e => { Css.visibilityOn(e); Css.displayOn(e); });
+        } else if (str == 'hide') {
+          Css.displayOff(this.tr);
+        } else if (str == 'blank') {
+          Css.displayOn(this.tr);
+          this.tds.forEach(e => { Css.visibilityOff(e); Css.displayOn(e); });
+        }
+      }
+
+    };
+
+    class DayNumbers {
+
+      constructor() {
+        this.elems = [...document.querySelectorAll('.n')];
+      }
+
+      fontsize(str) {
+        this.elems.forEach(e => Css.fontSize(e, str));
+      }
+
+      fontweight(str) {
+        this.elems.forEach(e => {
+          if (str == 'bold') {
+            Css.boldOn(e);
+          } else if (str == 'normal') {
+            Css.boldOff(e);
+          }
+        });
+      }
+
+      position(str) {
+        if (str == 'LR') {
+          this.elems.forEach(e => Css.positionLR(e));
+        } else if (str == 'LL') {
+          this.elems.forEach(e => Css.positionLL(e));
+        } else if (str == 'UL') {
+          this.elems.forEach(e => Css.positionUL(e));
+        } else if (str == 'UR') {
+          this.elems.forEach(e => Css.positionUR(e));
+        }
+      }
+
+      setnums(ary) {
+        for (var i = 0; i < this.elems.length; i++) {
+          Css.innertext(this.elems[i], ary[i % ary.length]);
+        }
+      }
+
+      visible(str) {
+        if (str == 'show') {
+          this.elems.forEach(e => Css.displayOn(e));
+        } else if (str == 'hide') {
+          this.elems.forEach(e => Css.displayOff(e));
+        }
+      }
+
+    };
+
+    class Calendar {
+
+      constructor(mon, yr) {
+        this.monthname = new MonthName();
+        this.weekdays = new WeekdayNames();
+        this.daynums = new DayNumbers();
+        this.table = document.getElementById('tbl');
+        this.config = {
+          year: yr,
+          month: mon,
+          fixed: 0,
+          paper: 'Letter',
+          startDay: 0,
+          custom: {
+            weekCount: 0,
+            offset: 0,
+            start: 1,
+            length: 6 * 7,
+          },
+        };
+
+        this.monthname.name(this.config.month, this.config.year)
+        this.weekdays.startday(this.config.startDay);
+        this.updateCal();
+      }
+
+
+      nextMonth() {
+        const nxt = (this.config.month + 1) % 12
+        if (nxt == 0) {
+            this.config.year++
+        }
+        this.setMonth(nxt, this.config.year)
+        controls.setMonth(nxt)
+        controls.setYear(this.config.year)
+      }
+
+      prevMonth() {
+        const prv = (this.config.month + 11) % 12
+        if (prv == 11) {
+            this.config.year--
+        }
+        this.setMonth(prv, this.config.year)
+        controls.setMonth(prv)
+        controls.setYear(this.config.year)
+      }
+
+      computeWeekCount(mon, yr, strt) {
+        var startDay = Calendar.getDayForMonth(mon, yr);
+        var offset = ((startDay - strt) + 7) % 7;
+        var dim = Calendar.getDaysInMonth(mon, yr);
+        return Math.ceil((offset + dim) / 7);
+      }
+
+
+      setCellSize(str) {
+        this.config.fixed = parseInt(str);
+        if (!this.config.custom.weekCount) {
+          this.updateCal();
+        }
+      }
+
+      setCustomLength(str) {
+        this.config.custom.length = parseInt(str);
+        this.updateCal();
+      }
+
+      setCustomOffset(str) {
+        this.config.custom.offset = parseInt(str);
+        this.updateCal();
+      }
+
+      setCustomStartNumber(str) {
+        this.config.custom.start = parseInt(str);
+        this.updateCal();
+      }
+
+      setCustomWeekCount(str) {
+        this.config.custom.weekCount = parseInt(str);
+        this.updateCal();
+      }
+
+      setMonth(str) {
+        this.config.month = parseInt(str);
+        this.monthname.name(this.config.month, this.config.year)
+        this.updateCal();
+      }
+
+      setPaperSize(str) {
+        this.config.paper = str;
+        if (str == 'Letter') {
+            this.table.style.aspectRatio = 11/8.5; // inches
+        } else if (str == 'A4') {
+            this.table.style.aspectRatio = 297/210; // mm
+        }
+        this.updateCal();
+      }
+
+      setStartDay(str) {
+        this.config.startDay = parseInt(str);
+        this.weekdays.startday(this.config.startDay);
+        this.updateCal();
+      }
+
+      setYear(str) {
+        this.config.year = parseInt(str);
+        this.monthname.name(this.config.month, this.config.year)
+        this.updateCal();
+      }
+
+      updateCal() {
+        var ary = [];
+        const offset = (this.config.custom.weekCount ?
+          this.config.custom.offset :
+          ((Calendar.getDayForMonth(this.config.month, this.config.year) - this.config.startDay) + 7) % 7);
+        for (var i = 0; i < offset; i++) {
+          ary.push('');
+        }
+
+        const beg = (this.config.custom.weekCount ?
+          this.config.custom.start :
+          1);
+        const end = (this.config.custom.weekCount ?
+          beg + this.config.custom.length - 1 :
+          Calendar.getDaysInMonth(this.config.month, this.config.year));
+        for (var i = beg; i <= end; i++) {
+          ary.push(i);
+        }
+
+        for (var i = (offset + (end - beg + 1)); i < 7 * 6; i++) {
+          ary.push('');
+        }
+        this.daynums.setnums(ary);
+
+        var rows = [...document.querySelectorAll('#tbl .r')];
+        rows.forEach(e => Css.displayOn(e));
+        if (!this.config.fixed) {
+          var wks = this.computeWeekCount(this.config.month, this.config.year, this.config.startDay);
+          if (this.config.custom.weekCount) {
+            wks = this.config.custom.weekCount;
+          }
+          for (var i = wks; i < rows.length; i++) {
+            Css.displayOff(rows[i]);
+          }
+        }
+
+      }
+
+      static getDayForMonth(mon, yr) {
+        // Zeller's Rule Formula
+        var k = 1; // Date
+        var m = (mon + 11); // 1=Mar, 11=Jan, 12=Feb
+        if (m > 12) {
+          m -= 12;
+        }
+        var d = yr - 2000; // Last two digits of year
+        if (mon == 0 || mon == 1) {
+          d--;
+        }
+        var c = Math.floor(yr / 100); // First two digits of year
+        var f = k + Math.floor((13 * m - 1) / 5) + d + Math.floor(d / 4) + Math.floor(c / 4) - 2 * c;
+        while (f < 0) {
+          f += 7;
+        }
+        return f % 7;
+      }
+
+      static getDaysInMonth(mon, yr) {
+        var dim = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mon];
+        if (Calendar.isFeb(mon) && Calendar.isLeapYear(yr)) {
+          dim++;
+        }
+        return dim;
+      }
+
+      static isFeb(mon) {
+        return mon == 1;
+      }
+
+      static isLeapYear(yr) {
+        if (yr % 4) {
+          return 0;
+        }
+        if (yr % 100) {
+          return 1;
+        }
+        if (yr % 400) {
+          return 1;
+        }
+        return 0;
+      }
+
+    }
+
+    class Controls {
+
+      constructor(mon, yr) {
+        this.setYear(yr);
+        this.setMonth(mon);
+      }
+
+      setMonth(val) {
+        document.getElementById('selectMonth').value = val;
+      }
+
+      setYear(val) {
+        document.getElementById('selectYear').value = val;
+      }
+
+    }
+
+    function initPage() {
+      var dateObj = new Date();
+
+      document.forms['ctrls'].reset();
+      const curYear = dateObj.getUTCFullYear();
+      const curMonth = dateObj.getMonth();
+
+      controls = new Controls(curMonth, curYear);
+
+      calendar = new Calendar(curMonth, curYear);
+
+      const sz = 25
+      calendar.monthname.fontsize(sz+'pt')
+      calendar.weekdays.fontsize((sz-10)+'pt')
+      calendar.daynums.fontsize((sz-5)+'pt')
+
+      calendar.setCellSize('1')
+
+      setToday()
+    }
+
+    function setToday() {
+        // On IceCatMobile on Android 6, Date() reports one date greater than actual date.
+        document.getElementById('today').innerText = 'Today: ' + (new Date()).toDateString()
+    }
+
+  </script>
+
+</head>
+
+<body onload='initPage()'>
+
+
+  <table id='tbl'>
+    <tr id='month'>
+      <td colspan=7><span id='monthName'>January</span></td>
+    </tr>
+
+    <tr id='weekdays' name='weekdays'>
+      <td><span>Sun</span></td>
+      <td><span>Mon</span></td>
+      <td><span>Tue</span></td>
+      <td><span>Wed</span></td>
+      <td><span>Thu</span></td>
+      <td><span>Fri</span></td>
+      <td><span>Sat</span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+    <tr class='r'>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+      <td><span class='n'></span></td>
+    </tr>
+
+  </table>
+
+  <div id='today' onclick='initPage()'>
+  </div>
+
+  <form id='ctrls' name='ctrls'>
+
+    <div>
+      <center>
+
+      <button onclick='calendar.prevMonth(); return false;'>Prev</button>
+
+      <select onchange='calendar.setMonth(this.value)' id='selectMonth'>
+        <option value='0'>Jan</option>
+        <option value='1'>Feb</option>
+        <option value='2'>Mar</option>
+        <option value='3'>Apr</option>
+        <option value='4'>May</option>
+        <option value='5'>Jun</option>
+        <option value='6'>Jul</option>
+        <option value='7'>Aug</option>
+        <option value='8'>Sep</option>
+        <option value='9'>Oct</option>
+        <option value='10'>Nov</option>
+        <option value='11'>Dec</option>
+      </select>
+
+      <select onchange='calendar.setYear(this.value)' id='selectYear'>
+        <option value='2020'>2020</option>
+        <option value='2021'>2021</option>
+        <option value='2022'>2022</option>
+        <option value='2023'>2023</option>
+        <option value='2024'>2024</option>
+        <option value='2025'>2025</option>
+        <option value='2026'>2026</option>
+        <option value='2027'>2027</option>
+        <option value='2028'>2028</option>
+        <option value='2029'>2029</option>
+        <option value='2030'>2030</option>
+        <option value='2031'>2031</option>
+        <option value='2032'>2032</option>
+        <option value='2033'>2033</option>
+        <option value='2034'>2034</option>
+        <option value='2035'>2035</option>
+        <option value='2036'>2036</option>
+        <option value='2037'>2037</option>
+        <option value='2038'>2038</option>
+        <option value='2039'>2039</option>
+        <option value='2040'>2040</option>
+        <option value='2041'>2041</option>
+        <option value='2042'>2042</option>
+        <option value='2043'>2043</option>
+        <option value='2044'>2044</option>
+        <option value='2045'>2045</option>
+        <option value='2046'>2046</option>
+        <option value='2047'>2047</option>
+        <option value='2048'>2048</option>
+        <option value='2049'>2049</option>
+      </select>
+
+      <button onclick='calendar.nextMonth(); return false;'>Next</button>
+      </center>
+
+    </div>
+
+  </form>
+
+</body>
+<html>
